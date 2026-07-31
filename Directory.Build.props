@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <!-- net8.0 目标在仅装有更高版本运行时的机器上运行（开发机只有 .NET 10）；
+         自包含/AOT 发布不受影响；framework-dependent 部署时兼容面更广。 -->
+    <RollForward>LatestMajor</RollForward>
+  </PropertyGroup>
+</Project>
