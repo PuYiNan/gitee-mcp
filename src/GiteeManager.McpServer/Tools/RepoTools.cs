@@ -23,10 +23,10 @@ public static class RepoTools
         [Description("关键词过滤")] string? keyword = null,
         CancellationToken cancellationToken = default)
     {
-        return await ExecuteAsync(async () =>
+        return await ToolHelpers.ExecuteAsync(async () =>
         {
             var node = await client.GetUserReposAsync(type, sort, direction, page, per_page, keyword, cancellationToken);
-            return WrapPaginated(node, page ?? 1, per_page ?? config.DefaultPerPage);
+            return ToolHelpers.WrapPaginated(node, page ?? 1, per_page ?? config.DefaultPerPage);
         });
     }
 
@@ -39,9 +39,9 @@ public static class RepoTools
         [Description("仓库所有者，缺省为配置的用户名")] string? owner = null,
         CancellationToken cancellationToken = default)
     {
-        return await ExecuteAsync(async () =>
+        return await ToolHelpers.ExecuteAsync(async () =>
         {
-            var node = await client.GetRepoAsync(ResolveOwner(config, owner), repo, cancellationToken);
+            var node = await client.GetRepoAsync(ToolHelpers.ResolveOwner(config, owner), repo, cancellationToken);
             return node?.ToJsonString() ?? "{}";
         });
     }
@@ -56,7 +56,7 @@ public static class RepoTools
         [Description("每页数量（默认 20，最大 100）")] int? per_page = null,
         CancellationToken cancellationToken = default)
     {
-        return await ExecuteAsync(async () =>
+        return await ToolHelpers.ExecuteAsync(async () =>
         {
             var node = await client.SearchReposAsync(q, page, per_page, cancellationToken);
             return node?.ToJsonString() ?? """{"total_count":0,"items":[]}""";
@@ -79,7 +79,7 @@ public static class RepoTools
         [Description("是否启用 Wiki")] bool? has_wiki = null,
         CancellationToken cancellationToken = default)
     {
-        return await ExecuteAsync(async () =>
+        return await ToolHelpers.ExecuteAsync(async () =>
         {
             var payload = new JsonObject
             {
@@ -109,7 +109,7 @@ public static class RepoTools
         [Description("仓库所有者，缺省为配置的用户名")] string? owner = null,
         CancellationToken cancellationToken = default)
     {
-        return await ExecuteAsync(async () =>
+        return await ToolHelpers.ExecuteAsync(async () =>
         {
             if (confirm != true)
             {
@@ -119,47 +119,9 @@ public static class RepoTools
                     "确认删除后重试，传入 confirm=true");
             }
 
-            var resolvedOwner = ResolveOwner(config, owner);
+            var resolvedOwner = ToolHelpers.ResolveOwner(config, owner);
             await client.DeleteRepoAsync(resolvedOwner, repo, cancellationToken);
             return $$"""{"success":true,"message":"仓库 {{resolvedOwner}}/{{repo}} 已删除"}""";
         });
-    }
-
-    /// <summary>统一错误转换：Gitee 结构化异常 → IsError 工具结果（消息承载错误协议 JSON）。</summary>
-    private static async Task<string> ExecuteAsync(Func<Task<string>> action)
-    {
-        try
-        {
-            return await action();
-        }
-        catch (GiteeApiException ex)
-        {
-            throw new GiteeToolException(ex.ToJson());
-        }
-    }
-
-    private static string ResolveOwner(GiteeConfig config, string? owner)
-    {
-        var resolved = owner ?? config.Username;
-        if (string.IsNullOrWhiteSpace(resolved))
-        {
-            throw new GiteeApiException(
-                0, "missing_owner",
-                "缺少仓库所有者",
-                "显式传 owner 参数，或在 config.json / GITEE_USERNAME 中配置用户名");
-        }
-        return resolved;
-    }
-
-    private static string WrapPaginated(JsonNode? node, int page, int per_page)
-    {
-        var items = node as JsonArray ?? node?["items"] as JsonArray ?? new JsonArray();
-        return new JsonObject
-        {
-            ["items"] = items,
-            ["page"] = page,
-            ["per_page"] = per_page,
-            ["returned"] = items.Count
-        }.ToJsonString();
     }
 }

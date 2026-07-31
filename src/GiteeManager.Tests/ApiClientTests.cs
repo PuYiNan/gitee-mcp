@@ -191,4 +191,42 @@ public class ApiClientTests
         Assert.EndsWith("/repos/PuYiNan/demo", request.RequestUri!.AbsolutePath);
         Assert.Null(result); // 204 无响应体
     }
+
+    // ===== M3 分支/标签 =====
+
+    [Fact]
+    public async Task GetBranches_SendsUrlWithSortAndPaging()
+    {
+        var handler = new FakeHttpMessageHandler(_ =>
+            FakeHttpMessageHandler.JsonResponse(200, "[]"));
+        var client = new GiteeApiClient(CreateConfig(), FakeHttpMessageHandler.CreateClient(handler, TestApiBase));
+
+        await client.GetBranchesAsync("PuYiNan", "demo", sort: "updated", page: 1, perPage: 50);
+
+        var request = Assert.Single(handler.Requests);
+        Assert.Equal(HttpMethod.Get, request.Method);
+        Assert.EndsWith("/repos/PuYiNan/demo/branches", request.RequestUri!.AbsolutePath);
+        var q = request.RequestUri.Query;
+        Assert.Contains("access_token=tok-123", q);
+        Assert.Contains("sort=updated", q);
+        Assert.Contains("page=1", q);
+        Assert.Contains("per_page=50", q);
+    }
+
+    [Fact]
+    public async Task GetTags_SendsUrlWithSortAndPaging()
+    {
+        var handler = new FakeHttpMessageHandler(_ =>
+            FakeHttpMessageHandler.JsonResponse(200, "[]"));
+        var client = new GiteeApiClient(CreateConfig(), FakeHttpMessageHandler.CreateClient(handler, TestApiBase));
+
+        await client.GetTagsAsync("PuYiNan", "demo", sort: "name", page: 1, perPage: 20);
+
+        var request = Assert.Single(handler.Requests);
+        Assert.EndsWith("/repos/PuYiNan/demo/tags", request.RequestUri!.AbsolutePath);
+        var q = request.RequestUri.Query;
+        Assert.Contains("access_token=tok-123", q);
+        Assert.Contains("sort=name", q);
+        Assert.Contains("per_page=20", q);
+    }
 }

@@ -68,6 +68,41 @@ public sealed class GiteeApiClient
     public Task<JsonNode?> DeleteRepoAsync(string owner, string repo, CancellationToken cancellationToken = default)
         => SendAsync(HttpMethod.Delete, $"/repos/{Escape(owner)}/{Escape(repo)}", cancellationToken);
 
+    /// <summary>列出仓库分支（GET /repos/{owner}/{repo}/branches）。</summary>
+    public Task<JsonNode?> GetBranchesAsync(
+        string owner,
+        string repo,
+        string? sort = null,
+        int? page = null,
+        int? perPage = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = BuildListQuery(sort, page, perPage);
+        return SendAsync(HttpMethod.Get, $"/repos/{Escape(owner)}/{Escape(repo)}/branches", cancellationToken, query);
+    }
+
+    /// <summary>列出仓库标签（GET /repos/{owner}/{repo}/tags）。</summary>
+    public Task<JsonNode?> GetTagsAsync(
+        string owner,
+        string repo,
+        string? sort = null,
+        int? page = null,
+        int? perPage = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = BuildListQuery(sort, page, perPage);
+        return SendAsync(HttpMethod.Get, $"/repos/{Escape(owner)}/{Escape(repo)}/tags", cancellationToken, query);
+    }
+
+    private Dictionary<string, object?> BuildListQuery(string? sort, int? page, int? perPage)
+    {
+        var query = new Dictionary<string, object?>();
+        if (sort is not null) query["sort"] = sort;
+        if (page is not null) query["page"] = page;
+        if (perPage is not null) query["per_page"] = _config.NormalizePerPage(perPage.Value);
+        return query;
+    }
+
     private static string Escape(string value) => Uri.EscapeDataString(value);
 
     /// <summary>发送请求：注入 access_token、分页钳制、错误映射、JSON 透传。</summary>
