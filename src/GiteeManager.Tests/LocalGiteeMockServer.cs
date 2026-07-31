@@ -18,6 +18,9 @@ public sealed class LocalGiteeMockServer : IDisposable
     /// <summary>收到的请求记录：(方法, 路径, 查询串)。</summary>
     public List<(string Method, string Path, string Query)> Requests { get; } = [];
 
+    /// <summary>收到的请求体记录（与 Requests 同序，无 body 时为 null）。</summary>
+    public List<string?> RequestBodies { get; } = [];
+
     /// <summary>路径前缀 → (HTTP 状态码, JSON 响应体)。未匹配路由默认 404。</summary>
     public Dictionary<string, (int Status, string Json)> Routes { get; } = [];
 
@@ -48,6 +51,14 @@ public sealed class LocalGiteeMockServer : IDisposable
             var path = ctx.Request.Url!.AbsolutePath;
             var query = ctx.Request.Url.Query;
             Requests.Add((ctx.Request.HttpMethod, path, query));
+
+            string? requestBody = null;
+            if (ctx.Request.HasEntityBody)
+            {
+                using var reader = new StreamReader(ctx.Request.InputStream, Encoding.UTF8);
+                requestBody = await reader.ReadToEndAsync();
+            }
+            RequestBodies.Add(requestBody);
 
             var (status, json) = Routes
                 .FirstOrDefault(r => path.StartsWith(r.Key, StringComparison.OrdinalIgnoreCase))

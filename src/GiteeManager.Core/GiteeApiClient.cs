@@ -1,4 +1,3 @@
-using System.Net.Http.Json;
 using System.Text.Json.Nodes;
 
 namespace GiteeManager.Core;
@@ -213,7 +212,8 @@ public sealed class GiteeApiClient
         using var request = new HttpRequestMessage(method, uri);
         if (body is not null)
         {
-            request.Content = JsonContent.Create(body);
+            // StringContent 纯字符串传递（JsonNode.ToJsonString），避免 JsonContent 反射序列化在 AOT 下被禁用
+            request.Content = new StringContent(body.ToJsonString(), System.Text.Encoding.UTF8, "application/json");
         }
 
         using var response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);

@@ -80,4 +80,25 @@ public class E2ETests
         var tools = await client.ListToolsAsync();
         Assert.Equal(17, tools.Count);
     }
+
+    [Fact]
+    public async Task RepoCreate_EndToEnd_PassesRequiredNameParam()
+    {
+        // 诊断回归：MCP 协议层必填参数 name 必须完整到达工具（排查 pi-mcp-adapter 调用丢参问题）
+        using var mock = new LocalGiteeMockServer();
+        mock.Routes["/api/v5/user/repos"] = (201, """{"full_name":"park-yinan/diag-repo"}""");
+        await using var client = await McpClient.CreateAsync(
+            new StdioClientTransport(CreateTransport("e2e-repo-create", mock.BaseUrl, "fake-token", "PuYiNan")));
+
+        var result = await client.CallToolAsync("repo_create",
+            new Dictionary<string, object?> { ["name"] = "diag-repo", ["private"] = false });
+
+        Assert.False(result.IsError is true);
+        var req = Assert.Single(mock.Requests);
+        Assert.Equal("POST", req.Method);
+        Assert.Equal("/api/v5/user/repos", req.Path);
+        var body = JsonNode.Parse(Assert.Single(mock.RequestBodies))!;
+        Assert.Equal("diag-repo", body["name"]!.GetValue<string>());
+        Assert.False(body["private"]!.GetValue<bool>());
+    }
 }
