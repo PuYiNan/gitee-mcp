@@ -8,7 +8,7 @@ namespace GiteeManager.McpServer.Tools;
 
 /// <summary>分支/标签域工具：列出仓库分支与标签。</summary>
 [McpServerToolType]
-public static class BranchTagTools
+public class BranchTagTools
 {
     [McpServerTool]
     [Description("列出指定 Gitee 仓库的分支，支持按名称/更新时间排序与分页。返回 { items, page, per_page, returned }。")]

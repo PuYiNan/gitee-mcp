@@ -8,7 +8,7 @@ namespace GiteeManager.McpServer.Tools;
 
 /// <summary>PR 域工具：列表 / 详情 / 创建 / 合并。</summary>
 [McpServerToolType]
-public static class PullRequestTools
+public class PullRequestTools
 {
     [McpServerTool]
     [Description("列出指定 Gitee 仓库的 PR，支持按 state/head/base 筛选与分页。返回 { items, page, per_page, returned }。")]

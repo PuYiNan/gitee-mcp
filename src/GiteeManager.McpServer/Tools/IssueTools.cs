@@ -8,7 +8,7 @@ namespace GiteeManager.McpServer.Tools;
 
 /// <summary>Issue 域工具：列表 / 创建 / 关闭。</summary>
 [McpServerToolType]
-public static class IssueTools
+public class IssueTools
 {
     [McpServerTool]
     [Description("列出指定 Gitee 仓库的 Issue，支持按 state/labels 筛选与分页。返回 { items, page, per_page, returned }。")]

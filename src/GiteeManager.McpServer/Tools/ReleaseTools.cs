@@ -8,7 +8,7 @@ namespace GiteeManager.McpServer.Tools;
 
 /// <summary>Release 域工具：列表 / 创建。</summary>
 [McpServerToolType]
-public static class ReleaseTools
+public class ReleaseTools
 {
     [McpServerTool]
     [Description("列出指定 Gitee 仓库的 Release，支持分页。返回 { items, page, per_page, returned }。")]

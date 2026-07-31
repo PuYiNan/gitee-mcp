@@ -7,7 +7,7 @@ namespace GiteeManager.McpServer.Tools;
 
 /// <summary>认证域工具：验证私人令牌并返回当前用户信息。</summary>
 [McpServerToolType]
-public static class AuthWhoamiTool
+public class AuthWhoamiTool
 {
     [McpServerTool]
     [Description("验证 Gitee 私人令牌的有效性，返回当前用户信息（JSON）。用于确认配置的令牌可用、以及后续操作以哪个账户身份执行。")]

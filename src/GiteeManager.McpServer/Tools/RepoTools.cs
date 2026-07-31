@@ -8,7 +8,7 @@ namespace GiteeManager.McpServer.Tools;
 
 /// <summary>仓库域工具：列出 / 详情 / 搜索 / 创建 / 删除。</summary>
 [McpServerToolType]
-public static class RepoTools
+public class RepoTools
 {
     [McpServerTool]
     [Description("列出当前账户的 Gitee 仓库，支持类型筛选、排序与关键词过滤（分页）。返回 { items, page, per_page, returned }。")]

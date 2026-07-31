@@ -1,5 +1,9 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
+  "approvalMode": "trusted",
+  "trustedApprover": "agent:trusted-mode",
+  "trustAuthorizedBy": "PuYiNan",
+  "trustAuthorizedAt": "2026-07-31T19:14:03.0517900Z",
   "solution": "",
   "requireFormatCheck": true,
   "requireUiHookWhenUiInScope": true,

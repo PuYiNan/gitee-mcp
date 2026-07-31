@@ -1,4 +1,5 @@
 using GiteeManager.Core;
+using GiteeManager.McpServer.Tools;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -42,16 +43,25 @@ void RegisterCoreServices(IServiceCollection services)
     services.AddSingleton<GiteeApiClient>();
 }
 
+// 显式注册工具（泛型 WithTools<T>，AOT 可静态分析；WithToolsFromAssembly 依赖反射，AOT 下不可用）
+static IMcpServerBuilder RegisterTools(IMcpServerBuilder builder, JsonSerializerOptions serializerOptions) => builder
+    .WithTools<AuthWhoamiTool>(serializerOptions: serializerOptions)
+    .WithTools<RepoTools>(serializerOptions: serializerOptions)
+    .WithTools<BranchTagTools>(serializerOptions: serializerOptions)
+    .WithTools<PullRequestTools>(serializerOptions: serializerOptions)
+    .WithTools<IssueTools>(serializerOptions: serializerOptions)
+    .WithTools<ReleaseTools>(serializerOptions: serializerOptions);
+
 async Task<int> RunHttpServerAsync(string[] a)
 {
     var port = ParsePort(a) ?? 8080;
     var builder = WebApplication.CreateBuilder(a);
     builder.Services.AddLogging(logging => logging.AddConsole(o => o.LogToStandardErrorThreshold = LogLevel.Trace));
     RegisterCoreServices(builder.Services);
-    builder.Services
+    var mcpBuilder = builder.Services
         .AddMcpServer()
-        .WithHttpTransport(o => o.Stateless = true)
-        .WithToolsFromAssembly(serializerOptions: toolSerializerOptions);
+        .WithHttpTransport(o => o.Stateless = true);
+    RegisterTools(mcpBuilder, toolSerializerOptions);
     var app = builder.Build();
     app.MapMcp();
     // 安全：默认仅监听 loopback（DNS 重绑定防护）；如需对外暴露由用户自行承担风险
@@ -80,10 +90,10 @@ stdioBuilder.Logging.AddConsole(consoleLogOptions =>
     consoleLogOptions.LogToStandardErrorThreshold = LogLevel.Trace;
 });
 RegisterCoreServices(stdioBuilder.Services);
-stdioBuilder.Services
+var stdioMcpBuilder = stdioBuilder.Services
     .AddMcpServer()
-    .WithStdioServerTransport()
-    .WithToolsFromAssembly(serializerOptions: toolSerializerOptions);
+    .WithStdioServerTransport();
+RegisterTools(stdioMcpBuilder, toolSerializerOptions);
 
 await stdioBuilder.Build().RunAsync();
 return 0;
