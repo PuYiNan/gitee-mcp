@@ -1,0 +1,7 @@
+{
+  "username": "你的Gitee用户名",
+  "token": "你的私人令牌（Gitee → 设置 → 安全设置 → 私人令牌）",
+  "api_base": "https://gitee.com/api/v5",
+  "default_per_page": 20,
+  "max_per_page": 100
+}

@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "gitee-mcp": {
+      "command": "D:/tools/gitee-mcp/gitee-mcp.exe",
+      "args": [],
+      "env": {
+        "GITEE_TOKEN": "你的私人令牌",
+        "GITEE_USERNAME": "你的Gitee用户名"
+      }
+    }
+  }
+}

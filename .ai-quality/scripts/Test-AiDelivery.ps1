@@ -53,5 +53,12 @@ if ($errors.Count -gt 0) {
     exit 1
 }
 
-Write-Host "Delivery validation passed for $WorkItemId. Human/PR acceptance is still required."
+$configPath = Join-Path $repoRoot '.ai-quality\config.json'
+$config = if (Test-Path -LiteralPath $configPath) { Get-Content -Raw -LiteralPath $configPath | ConvertFrom-Json } else { [pscustomobject]@{} }
+if ($config.approvalMode -eq 'trusted') {
+    Write-Host "Delivery validation passed for $WorkItemId. Trusted mode permits Agent acceptance; independent review was not performed."
+}
+else {
+    Write-Host "Delivery validation passed for $WorkItemId. Human/PR acceptance is still required."
+}
 exit 0

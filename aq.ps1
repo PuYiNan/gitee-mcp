@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Position = 0, Mandatory)]
-    [ValidateSet('new', 'status', 'approve', 'verify', 'check-delivery')]
+    [ValidateSet('new', 'status', 'trust', 'approve', 'verify', 'check-delivery')]
     [string] $Command,
 
     [string] $Title,
@@ -10,6 +10,9 @@ param(
     [string] $WorkItemId,
     [ValidateSet('Requirements', 'Plan', 'Tests', 'Delivery')] [string] $Stage,
     [string] $ApprovedBy,
+    [string] $AuthorizedBy,
+    [switch] $Enable,
+    [switch] $Disable,
     [string] $Note = '',
     [ValidateSet('Quick', 'Full')] [string] $Mode = 'Full',
     [string] $Target,
@@ -33,11 +36,27 @@ switch ($Command) {
         & (Join-Path $scripts 'Get-AiWorkflowStatus.ps1') @parameters
         $scriptSucceeded = $?
     }
-    'approve' {
-        if (-not $Stage -or -not $WorkItemId -or -not $ApprovedBy) {
-            throw 'approve requires -Stage, -WorkItemId, and -ApprovedBy.'
+    'trust' {
+        if ($Enable -and $Disable) { throw 'trust accepts either -Enable or -Disable, not both.' }
+        $parameters = @{}
+        if ($Enable) {
+            if (-not $AuthorizedBy) { throw 'trust -Enable requires -AuthorizedBy.' }
+            $parameters.Enable = $true
+            $parameters.AuthorizedBy = $AuthorizedBy
         }
-        & (Join-Path $scripts 'Approve-AiStage.ps1') -Stage $Stage -WorkItemId $WorkItemId -ApprovedBy $ApprovedBy -Note $Note
+        elseif ($Disable) {
+            $parameters.Disable = $true
+        }
+        & (Join-Path $scripts 'Set-AiTrustMode.ps1') @parameters
+        $scriptSucceeded = $?
+    }
+    'approve' {
+        if (-not $Stage -or -not $WorkItemId) {
+            throw 'approve requires -Stage and -WorkItemId. Manual mode also requires -ApprovedBy.'
+        }
+        $parameters = @{ Stage = $Stage; WorkItemId = $WorkItemId; Note = $Note }
+        if ($ApprovedBy) { $parameters.ApprovedBy = $ApprovedBy }
+        & (Join-Path $scripts 'Approve-AiStage.ps1') @parameters
         $scriptSucceeded = $?
     }
     'verify' {
