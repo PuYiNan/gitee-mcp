@@ -1,21 +1,26 @@
-﻿<#
+<#
 .SYNOPSIS
-gitee-mcp 一键安装器：从云端（GitHub/Gitee Release）下载发布产物并安装，
-可选接入多个 AI 客户端（PI / Claude Code / Claude Desktop / Cursor）。
+gitee-mcp one-click installer: downloads the release build from GitHub/Gitee cloud,
+installs it, and optionally registers it with AI clients (PI / Claude Code / Claude Desktop / Cursor).
 
 .DESCRIPTION
-自动完成：下载 zip -> 解压安装 -> 引导/读取令牌并写 config.json ->
-按选择写入各 AI 客户端的 MCP 配置 -> stdio 冒烟验证。
+Automates: download zip -> extract & install -> collect/read token & write config.json ->
+write MCP config for selected AI clients -> stdio smoke test.
+
+All script text is ASCII-only for maximum compatibility (any PowerShell, any encoding).
 
 .EXAMPLE
-# 交互模式（引导式）
+# Interactive mode
 powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1
 
-# 参数模式（可脚本化）
+# Parameterized mode
 powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 -Dir D:/tools/gitee-mcp -Username park-yinan -Token <token> -Agents pi,claude-code
 
-# 远程一行命令（从云端拉取本脚本后直接执行）
-powershell -NoProfile -ExecutionPolicy Bypass -c "irm https://gitee.com/park-yinan/gitee-mcp/raw/main/install.ps1 | iex"
+# One-liner from cloud (Gitee)
+powershell -NoProfile -ExecutionPolicy Bypass -c "irm https://gitee.com/park-yinan/gitee-mcp/raw/master/install.ps1 | iex"
+
+# One-liner from cloud (GitHub)
+powershell -NoProfile -ExecutionPolicy Bypass -c "irm https://raw.githubusercontent.com/PuYiNan/gitee-mcp/master/install.ps1 | iex"
 #>
 [CmdletBinding()]
 param(
@@ -35,17 +40,17 @@ $RepoGitHub = "PuYiNan/gitee-mcp"
 $ZipName = "gitee-mcp.zip"
 $Interactive = $Host.Name -ne "ServerRemoteHost"
 
-# ========== 1. 安装目录 ==========
+# ========== 1. Install directory ==========
 if ([string]::IsNullOrWhiteSpace($Dir)) {
     $Dir = Join-Path ([Environment]::GetFolderPath("LocalApplicationData")) $ProjectName
 }
 New-Item -ItemType Directory -Path $Dir -Force | Out-Null
 
-# ========== 2. 从云端下载 zip（双源自动回退） ==========
+# ========== 2. Download zip from cloud (dual-source fallback) ==========
 $sources = @()
 if ($Source -eq "gitee") { $sources = @("gitee") }
 elseif ($Source -eq "github") { $sources = @("github") }
-else { $sources = @("gitee", "github") } # auto：国内优先 Gitee
+else { $sources = @("gitee", "github") } # auto: Gitee first (faster in CN)
 
 $zipPath = Join-Path $env:TEMP "$ProjectName-$Version.zip"
 $downloaded = $false
@@ -55,39 +60,39 @@ foreach ($src in $sources) {
     } else {
         "https://github.com/$RepoGitHub/releases/download/$Version/$ZipName"
     }
-    Write-Host "==> 从 $src 下载：$url"
+    Write-Host "==> Downloading from $src : $url"
     try {
         Invoke-WebRequest -Uri $url -OutFile $zipPath -UseBasicParsing
         $downloaded = $true
-        Write-Host "    下载完成（$([math]::Round((Get-Item $zipPath).Length / 1MB, 1)) MB）"
+        Write-Host "    Downloaded ($([math]::Round((Get-Item $zipPath).Length / 1MB, 1)) MB)"
         break
     }
     catch {
-        Write-Warning "$src 下载失败：$($_.Exception.Message)"
+        Write-Warning "$src download failed: $($_.Exception.Message)"
     }
 }
-if (-not $downloaded) { throw "从云端下载 $ZipName 失败：请检查网络或版本号 $Version 是否存在" }
+if (-not $downloaded) { throw "Failed to download $ZipName from cloud. Check network or version $Version." }
 
-# ========== 3. 解压安装 ==========
-Write-Host "==> 安装到：$Dir"
+# ========== 3. Extract & install ==========
+Write-Host "==> Installing to: $Dir"
 $extractDir = Join-Path $env:TEMP "$ProjectName-extract"
 if (Test-Path $extractDir) { Remove-Item $extractDir -Recurse -Force }
 Expand-Archive -Path $zipPath -DestinationPath $extractDir -Force
 Copy-Item -Path (Join-Path $extractDir "*") -Destination $Dir -Recurse -Force
 $exePath = Join-Path $Dir "gitee-mcp.exe"
-if (-not (Test-Path $exePath)) { throw "安装失败：未找到 $exePath" }
+if (-not (Test-Path $exePath)) { throw "Install failed: $exePath not found" }
 
-# ========== 4. 令牌与 config.json ==========
+# ========== 4. Token & config.json ==========
 if ([string]::IsNullOrWhiteSpace($Token)) { $Token = [Environment]::GetEnvironmentVariable("GITEE_TOKEN") }
 $tokenSet = -not [string]::IsNullOrWhiteSpace($Token)
 if (-not $tokenSet -and $Interactive) {
     Write-Host ""
-    $input = Read-Host "输入 Gitee 私人令牌（留空跳过，稍后可填 config.json 或设 GITEE_TOKEN）"
+    $input = Read-Host "Enter Gitee personal access token (empty to skip; configure later in config.json or GITEE_TOKEN)"
     if (-not [string]::IsNullOrWhiteSpace($input)) { $Token = $input; $tokenSet = $true }
 }
 if ([string]::IsNullOrWhiteSpace($Username)) { $Username = [Environment]::GetEnvironmentVariable("GITEE_USERNAME") }
 if ([string]::IsNullOrWhiteSpace($Username) -and $Interactive) {
-    $Username = Read-Host "输入 Gitee 用户名（如 park-yinan）"
+    $Username = Read-Host "Enter Gitee username (e.g. park-yinan)"
 }
 
 if ($tokenSet -and -not [string]::IsNullOrWhiteSpace($Username)) {
@@ -99,25 +104,25 @@ if ($tokenSet -and -not [string]::IsNullOrWhiteSpace($Username)) {
         max_per_page = 100
     }
     $config | ConvertTo-Json | Set-Content -Path (Join-Path $Dir "config.json") -Encoding utf8
-    Write-Host "已写入 config.json（令牌仅存于此单点）"
+    Write-Host "config.json written (token stored here only)"
 }
 else {
-    Write-Host "未配置令牌：跳过 config.json（后续复制 config.example.json 填写，或设置 GITEE_TOKEN）"
+    Write-Host "No token configured: skipped config.json (copy config.example.json later, or set GITEE_TOKEN)"
     if (-not (Test-Path (Join-Path $Dir "config.json"))) {
         Copy-Item (Join-Path $Dir "config.example.json") (Join-Path $Dir "config.json")
     }
 }
 
-# ========== 5. 选择要接入的 AI 客户端 ==========
+# ========== 5. Select AI clients to register ==========
 if ($SkipAgents) { $Agents = @() }
 elseif ($Agents.Count -eq 0 -and $Interactive) {
     Write-Host ""
-    Write-Host "==> 选择要接入的 AI 客户端（逗号分隔多选，如 1,2；输入 0 接入全部；留空跳过）："
-    Write-Host "  1) pi             （Pi / pi-mcp-adapter 全局配置）"
-    Write-Host "  2) claude-code    （Claude Code，当前目录 .mcp.json）"
-    Write-Host "  3) claude-desktop （Claude Desktop）"
-    Write-Host "  4) cursor         （Cursor 全局配置）"
-    $sel = Read-Host "选择"
+    Write-Host "==> Select AI clients to register (comma-separated, e.g. 1,2; 0 = all; empty = skip):"
+    Write-Host "  1) pi             (Pi / pi-mcp-adapter global config)"
+    Write-Host "  2) claude-code    (Claude Code, .mcp.json in current dir)"
+    Write-Host "  3) claude-desktop (Claude Desktop)"
+    Write-Host "  4) cursor         (Cursor global config)"
+    $sel = Read-Host "Select"
     $selected = @()
     foreach ($item in ($sel -split ",")) {
         $item = $item.Trim()
@@ -130,10 +135,10 @@ elseif ($Agents.Count -eq 0 -and $Interactive) {
     $Agents = $selected | Select-Object -Unique
 }
 
-# ========== 6. 写入各 agent 配置 ==========
+# ========== 6. Write per-agent MCP config ==========
 if ($Agents.Count -gt 0) {
     Write-Host ""
-    Write-Host "==> 接入 AI 客户端："
+    Write-Host "==> Registering AI clients:"
     $serverEntry = [pscustomobject]@{ command = $exePath; args = @() }
     if ($Agents -contains "pi") {
         $path = Join-Path $HOME ".config\mcp\mcp.json"
@@ -158,12 +163,12 @@ if ($Agents.Count -gt 0) {
 }
 else {
     Write-Host ""
-    Write-Host "未选择接入 AI 客户端（可稍后手动配置，参考 mcp-config.example.json）"
+    Write-Host "No AI client selected (configure later, see mcp-config.example.json)"
 }
 
-# ========== 7. stdio 冒烟验证 ==========
+# ========== 7. stdio smoke test ==========
 Write-Host ""
-Write-Host "==> 验证安装（stdio 冒烟）..."
+Write-Host "==> Verifying install (stdio smoke test)..."
 $probe = '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"installer","version":"1.0"}}}' + "`n" +
          '{"jsonrpc":"2.0","method":"notifications/initialized"}' + "`n" +
          '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'
@@ -171,25 +176,25 @@ try {
     $out = ($probe | & $exePath 2>$null) -join "`n"
     if ($out -match '"tools"') {
         $count = ([regex]::Matches($out, '"name":"')).Count
-        Write-Host "  冒烟通过：$count 个工具可用"
+        Write-Host "  Smoke OK: $count tools available"
     }
-    else { Write-Warning "冒烟未返回工具列表（检查安装完整性）" }
+    else { Write-Warning "Smoke test did not return tools list (check install integrity)" }
 }
 catch {
-    Write-Warning "冒烟执行失败：$($_.Exception.Message)"
+    Write-Warning "Smoke test failed: $($_.Exception.Message)"
 }
 
-# ========== 8. 汇总 ==========
+# ========== 8. Summary ==========
 Write-Host ""
 Write-Host "=========================================="
-Write-Host " gitee-mcp 安装完成"
-Write-Host "   安装目录 : $Dir"
-Write-Host "   可执行   : $exePath"
-Write-Host "   接入 agent: $($(if ($Agents.Count -gt 0) { $Agents -join ", " } else { "无" }))"
-Write-Host "   注意     : 接入的 AI 客户端需重启后生效（如 Pi / Claude Desktop）"
+Write-Host " gitee-mcp installed"
+Write-Host "   Install dir : $Dir"
+Write-Host "   Executable  : $exePath"
+Write-Host "   Agents      : $($(if ($Agents.Count -gt 0) { $Agents -join ", " } else { "none" }))"
+Write-Host "   Note        : restart the AI client (Pi / Claude Desktop) to pick up new config"
 Write-Host "=========================================="
 
-# ========== 辅助函数 ==========
+# ========== Helpers ==========
 function Add-McpServer {
     param([string] $Path, [object] $Server, [string] $Name)
     $dir = Split-Path $Path -Parent
@@ -202,7 +207,6 @@ function Add-McpServer {
     if ($null -eq $root) { $root = [pscustomobject]@{ mcpServers = [pscustomobject]@{} } }
     if ($null -eq $root.mcpServers) { $root | Add-Member -NotePropertyName mcpServers -NotePropertyValue ([pscustomobject]@{}) -Force }
 
-    # 删除旧条目后重建（避免 Add-Member 对已存在属性报错）
     $servers = $root.mcpServers
     $existing = @($servers.PSObject.Properties | Where-Object { $_.Name -eq $Name })
     foreach ($p in $existing) { $servers.PSObject.Properties.Remove($p.Name) }
