@@ -37,7 +37,7 @@ if ($Stage -eq 'Requirements' -and $content -notmatch 'AC-\d{3}') {
 }
 if ($Stage -eq 'Delivery') {
     & (Join-Path $PSScriptRoot 'Test-AiDelivery.ps1') -WorkItemId $WorkItemId
-    if ($LASTEXITCODE -ne 0) { throw 'Delivery validation failed.' }
+    if (-not $?) { throw 'Delivery validation failed.' }
 }
 
 $challenge = "APPROVE $WorkItemId $($Stage.ToUpperInvariant())"

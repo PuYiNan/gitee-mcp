@@ -42,13 +42,34 @@ public class McpSmokeTests
     }
 
     [Fact]
-    public async Task StdioServer_ToolListOnlyIncludesRegisteredTools()
+    public async Task StdioServer_ExposesAllSixTools()
     {
         await using var client = await McpClient.CreateAsync(new StdioClientTransport(CreateTransportOptions("gitee-mcp-smoke-2")));
 
         var tools = await client.ListToolsAsync();
 
-        Assert.Single(tools); // M1 仅注册 auth_whoami
-        Assert.Equal("auth_whoami", tools[0].Name);
+        var names = tools.Select(t => t.Name).OrderBy(n => n).ToArray();
+        Assert.Equal(
+            ["auth_whoami", "repo_create", "repo_delete", "repo_get", "repo_list", "repo_search"],
+            names);
+        Assert.All(tools, t => Assert.False(string.IsNullOrWhiteSpace(t.Description), $"{t.Name} 必须有非空描述"));
+    }
+
+    [Fact]
+    public async Task StdioServer_RepoListSchemaUsesSnakeCaseParams()
+    {
+        await using var client = await McpClient.CreateAsync(new StdioClientTransport(CreateTransportOptions("gitee-mcp-smoke-3")));
+
+        var tools = await client.ListToolsAsync();
+        var repoList = Assert.Single(tools, t => t.Name == "repo_list");
+        var properties = repoList.ProtocolTool.InputSchema.GetProperty("properties");
+
+        // M2 工具参数：snake_case 命名 + 全部在 schema 中（AC-002）
+        Assert.True(properties.TryGetProperty("type", out _));
+        Assert.True(properties.TryGetProperty("sort", out _));
+        Assert.True(properties.TryGetProperty("direction", out _));
+        Assert.True(properties.TryGetProperty("page", out _));
+        Assert.True(properties.TryGetProperty("per_page", out _));
+        Assert.True(properties.TryGetProperty("keyword", out _));
     }
 }

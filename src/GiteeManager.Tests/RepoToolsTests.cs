@@ -61,7 +61,7 @@ public class RepoToolsTests
         Assert.Equal(HttpMethod.Delete, request.Method);
         Assert.EndsWith("/repos/PuYiNan/demo", request.RequestUri!.AbsolutePath);
         var node = JsonNode.Parse(result)!;
-        Assert.Equal(true, node["success"]!.GetValue<bool>());
+        Assert.True(node["success"]!.GetValue<bool>());
         Assert.Contains("已删除", node["message"]!.GetValue<string>());
     }
 
@@ -96,8 +96,8 @@ public class RepoToolsTests
         var handler = new FakeHttpMessageHandler(_ => FakeHttpMessageHandler.JsonResponse(200, "[]"));
         var client = CreateClient(handler);
 
-        await RepoTools.RepoList(CreateConfig(), client, perPage: 0);
-        await RepoTools.RepoList(CreateConfig(), client, perPage: 101);
+        await RepoTools.RepoList(CreateConfig(), client, per_page: 0);
+        await RepoTools.RepoList(CreateConfig(), client, per_page: 101);
 
         Assert.Equal(2, handler.Requests.Count);
         Assert.Contains("per_page=20", handler.Requests[0].RequestUri!.Query);
@@ -111,7 +111,7 @@ public class RepoToolsTests
             FakeHttpMessageHandler.JsonResponse(200, """[{"name":"a"},{"name":"b"}]"""));
         var client = CreateClient(handler);
 
-        var result = await RepoTools.RepoList(CreateConfig(), client, page: 2, perPage: 20);
+        var result = await RepoTools.RepoList(CreateConfig(), client, page: 2, per_page: 20);
 
         var node = JsonNode.Parse(result)!;
         Assert.Equal(2, node["items"]!.AsArray().Count);

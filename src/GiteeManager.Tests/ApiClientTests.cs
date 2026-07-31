@@ -168,10 +168,12 @@ public class ApiClientTests
         var request = Assert.Single(handler.Requests);
         Assert.Equal(HttpMethod.Post, request.Method);
         Assert.EndsWith("/user/repos", request.RequestUri!.AbsolutePath);
-        var body = JsonNode.Parse(Assert.Single(handler.RequestBodies))!;
+        var requestBody = Assert.Single(handler.RequestBodies);
+        Assert.NotNull(requestBody);
+        var body = JsonNode.Parse(requestBody)!;
         Assert.Equal("demo", body["name"]!.GetValue<string>());
         Assert.Equal("测试仓库", body["description"]!.GetValue<string>());
-        Assert.Equal(true, body["private"]!.GetValue<bool>());
+        Assert.True(body["private"]!.GetValue<bool>());
         Assert.Equal("demo", result!["name"]!.GetValue<string>());
     }
 

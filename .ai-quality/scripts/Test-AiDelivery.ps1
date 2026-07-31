@@ -54,3 +54,4 @@ if ($errors.Count -gt 0) {
 }
 
 Write-Host "Delivery validation passed for $WorkItemId. Human/PR acceptance is still required."
+exit 0

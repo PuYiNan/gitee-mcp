@@ -17,6 +17,7 @@ param(
 )
 
 $scripts = Join-Path $PSScriptRoot '.ai-quality\scripts'
+$scriptSucceeded = $false
 
 switch ($Command) {
     'new' {
@@ -24,28 +25,34 @@ switch ($Command) {
         $parameters = @{ Title = $Title; UiScope = $UiScope }
         if ($Id) { $parameters.Id = $Id }
         & (Join-Path $scripts 'New-AiWorkItem.ps1') @parameters
+        $scriptSucceeded = $?
     }
     'status' {
         $parameters = @{ Json = $Json }
         if ($WorkItemId) { $parameters.WorkItemId = $WorkItemId }
         & (Join-Path $scripts 'Get-AiWorkflowStatus.ps1') @parameters
+        $scriptSucceeded = $?
     }
     'approve' {
         if (-not $Stage -or -not $WorkItemId -or -not $ApprovedBy) {
             throw 'approve requires -Stage, -WorkItemId, and -ApprovedBy.'
         }
         & (Join-Path $scripts 'Approve-AiStage.ps1') -Stage $Stage -WorkItemId $WorkItemId -ApprovedBy $ApprovedBy -Note $Note
+        $scriptSucceeded = $?
     }
     'verify' {
         if (-not $WorkItemId) { throw 'verify requires -WorkItemId.' }
         $parameters = @{ WorkItemId = $WorkItemId; Mode = $Mode }
         if ($Target) { $parameters.Target = $Target }
         & (Join-Path $scripts 'Invoke-AiQualityGate.ps1') @parameters
+        $scriptSucceeded = $?
     }
     'check-delivery' {
         if (-not $WorkItemId) { throw 'check-delivery requires -WorkItemId.' }
         & (Join-Path $scripts 'Test-AiDelivery.ps1') -WorkItemId $WorkItemId
+        $scriptSucceeded = $?
     }
 }
 
-if ($LASTEXITCODE) { exit $LASTEXITCODE }
+if (-not $scriptSucceeded) { exit 1 }
+exit 0

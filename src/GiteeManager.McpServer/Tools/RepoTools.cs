@@ -19,14 +19,14 @@ public static class RepoTools
         [Description("排序字段：full_name/created/updated/pushed")] string? sort = null,
         [Description("排序方向：asc/desc")] string? direction = null,
         [Description("页码（从 1 开始）")] int? page = null,
-        [Description("每页数量（默认 20，最大 100）")] int? perPage = null,
+        [Description("每页数量（默认 20，最大 100）")] int? per_page = null,
         [Description("关键词过滤")] string? keyword = null,
         CancellationToken cancellationToken = default)
     {
         return await ExecuteAsync(async () =>
         {
-            var node = await client.GetUserReposAsync(type, sort, direction, page, perPage, keyword, cancellationToken);
-            return WrapPaginated(node, page ?? 1, perPage ?? config.DefaultPerPage);
+            var node = await client.GetUserReposAsync(type, sort, direction, page, per_page, keyword, cancellationToken);
+            return WrapPaginated(node, page ?? 1, per_page ?? config.DefaultPerPage);
         });
     }
 
@@ -53,12 +53,12 @@ public static class RepoTools
         GiteeApiClient client,
         [Description("搜索关键词（必填）")] string q,
         [Description("页码（从 1 开始）")] int? page = null,
-        [Description("每页数量（默认 20，最大 100）")] int? perPage = null,
+        [Description("每页数量（默认 20，最大 100）")] int? per_page = null,
         CancellationToken cancellationToken = default)
     {
         return await ExecuteAsync(async () =>
         {
-            var node = await client.SearchReposAsync(q, page, perPage, cancellationToken);
+            var node = await client.SearchReposAsync(q, page, per_page, cancellationToken);
             return node?.ToJsonString() ?? """{"total_count":0,"items":[]}""";
         });
     }
@@ -71,12 +71,12 @@ public static class RepoTools
         [Description("仓库名称（必填；字母、数字、下划线、连字符，不超过 100 字符）")] string name,
         [Description("仓库描述")] string? description = null,
         [Description("是否私有仓库")] bool @private = false,
-        [Description("是否自动初始化 README")] bool autoInit = false,
-        [Description("Git 忽略模板，如 VisualStudio")] string? gitignoreTemplate = null,
-        [Description("开源许可证模板，如 MIT")] string? licenseTemplate = null,
+        [Description("是否自动初始化 README")] bool auto_init = false,
+        [Description("Git 忽略模板，如 VisualStudio")] string? gitignore_template = null,
+        [Description("开源许可证模板，如 MIT")] string? license_template = null,
         [Description("项目主页 URL")] string? homepage = null,
-        [Description("是否启用 Issue")] bool? hasIssues = null,
-        [Description("是否启用 Wiki")] bool? hasWiki = null,
+        [Description("是否启用 Issue")] bool? has_issues = null,
+        [Description("是否启用 Wiki")] bool? has_wiki = null,
         CancellationToken cancellationToken = default)
     {
         return await ExecuteAsync(async () =>
@@ -86,13 +86,13 @@ public static class RepoTools
                 ["name"] = name,
                 ["description"] = description,
                 ["private"] = @private,
-                ["auto_init"] = autoInit
+                ["auto_init"] = auto_init
             };
-            if (gitignoreTemplate is not null) payload["gitignore_template"] = gitignoreTemplate;
-            if (licenseTemplate is not null) payload["license_template"] = licenseTemplate;
+            if (gitignore_template is not null) payload["gitignore_template"] = gitignore_template;
+            if (license_template is not null) payload["license_template"] = license_template;
             if (homepage is not null) payload["homepage"] = homepage;
-            if (hasIssues is not null) payload["has_issues"] = hasIssues;
-            if (hasWiki is not null) payload["has_wiki"] = hasWiki;
+            if (has_issues is not null) payload["has_issues"] = has_issues;
+            if (has_wiki is not null) payload["has_wiki"] = has_wiki;
 
             var node = await client.CreateRepoAsync(payload, cancellationToken);
             return node?.ToJsonString() ?? "{}";
@@ -151,14 +151,14 @@ public static class RepoTools
         return resolved;
     }
 
-    private static string WrapPaginated(JsonNode? node, int page, int perPage)
+    private static string WrapPaginated(JsonNode? node, int page, int per_page)
     {
         var items = node as JsonArray ?? node?["items"] as JsonArray ?? new JsonArray();
         return new JsonObject
         {
             ["items"] = items,
             ["page"] = page,
-            ["per_page"] = perPage,
+            ["per_page"] = per_page,
             ["returned"] = items.Count
         }.ToJsonString();
     }
