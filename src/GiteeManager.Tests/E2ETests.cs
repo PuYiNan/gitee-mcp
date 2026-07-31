@@ -97,7 +97,9 @@ public class E2ETests
         var req = Assert.Single(mock.Requests);
         Assert.Equal("POST", req.Method);
         Assert.Equal("/api/v5/user/repos", req.Path);
-        var body = JsonNode.Parse(Assert.Single(mock.RequestBodies))!;
+        var requestBody = Assert.Single(mock.RequestBodies);
+        Assert.NotNull(requestBody);
+        var body = JsonNode.Parse(requestBody)!;
         Assert.Equal("diag-repo", body["name"]!.GetValue<string>());
         Assert.False(body["private"]!.GetValue<bool>());
     }
