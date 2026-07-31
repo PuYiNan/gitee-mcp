@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/GiteeManager.Core/GiteeManager.Core.csproj" />
+    <Project Path="src/GiteeManager.McpServer/GiteeManager.McpServer.csproj" />
+    <Project Path="src/GiteeManager.Tests/GiteeManager.Tests.csproj" />
+  </Folder>
+</Solution>

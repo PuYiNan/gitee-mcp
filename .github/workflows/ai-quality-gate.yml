@@ -1,0 +1,43 @@
+name: ai-quality-gate
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: requirements-tests-and-evidence
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Resolve active work item
+        id: work-item
+        shell: pwsh
+        run: |
+          $id = (Get-Content -Raw .ai-quality/active-work-item.txt).Trim()
+          if (-not $id) { throw 'No active work item is configured.' }
+          "id=$id" >> $env:GITHUB_OUTPUT
+
+      - name: Run immutable Full quality gate
+        shell: pwsh
+        run: ./.ai-quality/scripts/Invoke-AiQualityGate.ps1 -WorkItemId '${{ steps.work-item.outputs.id }}' -Mode Full
+
+      - name: Validate delivery claims
+        shell: pwsh
+        run: ./.ai-quality/scripts/Test-AiDelivery.ps1 -WorkItemId '${{ steps.work-item.outputs.id }}'
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-quality-evidence-${{ steps.work-item.outputs.id }}
+          path: .ai-quality/work-items/${{ steps.work-item.outputs.id }}/evidence/
+          if-no-files-found: error

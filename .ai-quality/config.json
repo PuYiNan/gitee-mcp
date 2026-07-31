@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "solution": "",
+  "requireFormatCheck": true,
+  "requireUiHookWhenUiInScope": true,
+  "fullHook": ".ai-quality/hooks/full.ps1",
+  "uiHook": ".ai-quality/hooks/ui.ps1"
+}

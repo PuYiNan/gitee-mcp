@@ -1,0 +1,32 @@
+trigger: none
+pr:
+  branches:
+    include:
+      - '*'
+
+pool:
+  vmImage: windows-latest
+
+steps:
+  - task: UseDotNet@2
+    inputs:
+      packageType: sdk
+      version: 10.0.x
+
+  - pwsh: |
+      $id = (Get-Content -Raw .ai-quality/active-work-item.txt).Trim()
+      if (-not $id) { throw 'No active work item is configured.' }
+      Write-Host "##vso[task.setvariable variable=WorkItemId]$id"
+    displayName: Resolve active work item
+
+  - pwsh: ./.ai-quality/scripts/Invoke-AiQualityGate.ps1 -WorkItemId '$(WorkItemId)' -Mode Full
+    displayName: Run Full quality gate
+
+  - pwsh: ./.ai-quality/scripts/Test-AiDelivery.ps1 -WorkItemId '$(WorkItemId)'
+    displayName: Validate delivery claims
+
+  - task: PublishPipelineArtifact@1
+    condition: always()
+    inputs:
+      targetPath: .ai-quality/work-items/$(WorkItemId)/evidence
+      artifact: ai-quality-evidence

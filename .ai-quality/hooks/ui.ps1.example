@@ -1,0 +1,8 @@
+param(
+    [Parameter(Mandatory)] [string] $WorkItemId,
+    [Parameter(Mandatory)] [string] $EvidenceDirectory
+)
+
+# Rename this file to ui.ps1. Start the application, run Playwright/Appium/FlaUI,
+# and save screenshots/traces beneath $EvidenceDirectory. Return non-zero on failure.
+throw "UI scope is enabled but the repository UI test hook has not been implemented."

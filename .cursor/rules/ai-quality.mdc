@@ -1,0 +1,6 @@
+---
+description: Mandatory evidence-based delivery workflow
+alwaysApply: true
+---
+
+Read `.ai-quality/agent-policy.md`, then run `pwsh ./aq.ps1 status` before editing. Never implement before `implementation-authorized`, never self-approve a stage, and never claim completion without passing the Full quality gate and delivery validator.

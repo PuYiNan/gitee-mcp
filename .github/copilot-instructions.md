@@ -1,0 +1,1 @@
+Before editing, read and obey `.ai-quality/agent-policy.md` and run `pwsh ./aq.ps1 status`. Requirements, Plan, Tests, and Delivery approvals belong to a human reviewer. Only implement in an authorized state. Completion requires the Full gate, UI evidence when applicable, and a valid delivery report.

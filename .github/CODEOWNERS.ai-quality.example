@@ -1,0 +1,6 @@
+# Rename to CODEOWNERS and replace the placeholder with a real reviewer/team.
+# Then enable "Require review from Code Owners" and require ai-quality-gate.
+/.ai-quality/agent-policy.md @YOUR-QUALITY-OWNER
+/.ai-quality/config.json @YOUR-QUALITY-OWNER
+/.ai-quality/work-items/*/approvals/ @YOUR-QUALITY-OWNER
+/.github/workflows/ai-quality-gate.yml @YOUR-QUALITY-OWNER

@@ -1,0 +1,8 @@
+param(
+    [Parameter(Mandatory)] [string] $WorkItemId,
+    [Parameter(Mandatory)] [string] $EvidenceDirectory
+)
+
+# Rename this file to full.ps1 and add repository-specific integration,
+# architecture, security, or packaging checks. Return a non-zero exit code on failure.
+Write-Host "No repository-specific Full checks configured for $WorkItemId."
