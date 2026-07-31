@@ -232,11 +232,13 @@ public sealed class GiteeApiClient
         return JsonNode.Parse(responseBody);
     }
 
-    /// <summary>构造请求 URI：BaseAddress + 路径 + access_token 注入 + 自定义查询参数。</summary>
+    /// <summary>构造请求 URI：保留 api_base 的路径前缀（如 /api/v5）+ 接口路径 + access_token 注入 + 自定义查询参数。</summary>
     private Uri BuildUri(string path, Dictionary<string, object?>? query)
     {
         var baseUri = new Uri(_config.ApiBase);
-        var builder = new UriBuilder(baseUri) { Path = path.TrimStart('/') };
+        // 拼接 api_base 路径前缀与接口路径：如 /api/v5 + /user/repos → /api/v5/user/repos
+        var combinedPath = (baseUri.AbsolutePath.TrimEnd('/') + "/" + path.TrimStart('/')).TrimStart('/');
+        var builder = new UriBuilder(baseUri) { Path = combinedPath };
 
         var parts = new List<string> { $"access_token={Uri.EscapeDataString(_config.Token)}" };
         if (query is not null)

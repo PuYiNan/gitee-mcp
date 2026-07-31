@@ -384,4 +384,31 @@ public class ApiClientTests
         Assert.Equal("v1.0.0", body["tag_name"]!.GetValue<string>());
         Assert.Equal("v1.0.0", result!["tag_name"]!.GetValue<string>());
     }
+
+    // ===== M5 BuildUri 前缀修复 =====
+
+    [Fact]
+    public async Task BuildUri_PreservesApiBasePathPrefix()
+    {
+        var handler = new FakeHttpMessageHandler(_ => FakeHttpMessageHandler.JsonResponse(200, """{"login":"PuYiNan"}"""));
+        var client = new GiteeApiClient(CreateConfig(), FakeHttpMessageHandler.CreateClient(handler, TestApiBase));
+
+        await client.GetCurrentUserAsync();
+
+        Assert.Equal("https://gitee.com/api/v5/user/repos?access_token=tok-123",
+            Assert.Single(handler.Requests).RequestUri!.ToString());
+    }
+
+    [Fact]
+    public async Task BuildUri_WorksWithApiBaseWithoutPathPrefix()
+    {
+        var handler = new FakeHttpMessageHandler(_ => FakeHttpMessageHandler.JsonResponse(200, """{"full_name":"a/b"}"""));
+        var config = new GiteeConfig { Username = "PuYiNan", Token = "tok-123", ApiBase = "https://gitee.com" };
+        var client = new GiteeApiClient(config, FakeHttpMessageHandler.CreateClient(handler, "https://gitee.com"));
+
+        await client.GetRepoAsync("a", "b");
+
+        Assert.Equal("https://gitee.com/repos/a/b?access_token=tok-123",
+            Assert.Single(handler.Requests).RequestUri!.ToString());
+    }
 }

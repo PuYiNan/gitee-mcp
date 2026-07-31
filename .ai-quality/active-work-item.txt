@@ -1,1 +1,1 @@
-20260801-gitee-mcp-m4-pr-issue-release
+20260801-gitee-mcp-m5-http-serve-e2e
