@@ -44,7 +44,7 @@ public class ReleaseToolsTests
         var result = await ReleaseTools.ReleaseCreate(CreateConfig(), client, "demo", tag_name: "v1.0.0", body: "首个版本", prerelease: true);
 
         Assert.Equal(HttpMethod.Post, handler.Requests[0].Method);
-        var body = JsonNode.Parse(handler.RequireSingleBody());
+        var body = JsonNode.Parse(handler.RequireSingleBody())!;
         Assert.Equal("v1.0.0", body["tag_name"]!.GetValue<string>());
         Assert.Equal("首个版本", body["body"]!.GetValue<string>());
         Assert.True(body["prerelease"]!.GetValue<bool>());

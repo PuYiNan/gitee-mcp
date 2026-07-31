@@ -43,7 +43,7 @@ public class PullRequestToolsTests
         var result = await PullRequestTools.PrCreate(CreateConfig(), client, "demo", title: "feat", head: "dev", @base: "master", body: "说明");
 
         Assert.Equal(HttpMethod.Post, handler.Requests[0].Method);
-        var body = JsonNode.Parse(handler.RequireSingleBody());
+        var body = JsonNode.Parse(handler.RequireSingleBody())!;
         Assert.Equal("feat", body["title"]!.GetValue<string>());
         Assert.Equal("dev", body["head"]!.GetValue<string>());
         Assert.Equal("master", body["base"]!.GetValue<string>());
@@ -59,7 +59,7 @@ public class PullRequestToolsTests
 
         await PullRequestTools.PrMerge(CreateConfig(), client, "demo", number: 12);
 
-        var body = JsonNode.Parse(handler.RequireSingleBody());
+        var body = JsonNode.Parse(handler.RequireSingleBody())!;
         Assert.Equal("merge", body["merge_method"]!.GetValue<string>());
     }
 
