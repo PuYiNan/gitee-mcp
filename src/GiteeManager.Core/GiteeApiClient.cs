@@ -103,6 +103,102 @@ public sealed class GiteeApiClient
         return query;
     }
 
+    // ===== M4 PR =====
+
+    /// <summary>列出仓库 PR（GET /repos/{owner}/{repo}/pulls），支持 state/head/base 筛选与分页。</summary>
+    public Task<JsonNode?> GetPullsAsync(
+        string owner,
+        string repo,
+        string? state = null,
+        string? head = null,
+        string? @base = null,
+        int? page = null,
+        int? perPage = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new Dictionary<string, object?>();
+        if (state is not null) query["state"] = state;
+        if (head is not null) query["head"] = head;
+        if (@base is not null) query["base"] = @base;
+        if (page is not null) query["page"] = page;
+        if (perPage is not null) query["per_page"] = _config.NormalizePerPage(perPage.Value);
+        return SendAsync(HttpMethod.Get, $"/repos/{Escape(owner)}/{Escape(repo)}/pulls", cancellationToken, query);
+    }
+
+    /// <summary>获取 PR 详情（GET /repos/{owner}/{repo}/pulls/{number}）。</summary>
+    public Task<JsonNode?> GetPullAsync(string owner, string repo, int number, CancellationToken cancellationToken = default)
+        => SendAsync(HttpMethod.Get, $"/repos/{Escape(owner)}/{Escape(repo)}/pulls/{number}", cancellationToken);
+
+    /// <summary>创建 PR（POST /repos/{owner}/{repo}/pulls）。payload 含 title/head/base/body/labels。</summary>
+    public Task<JsonNode?> CreatePullAsync(string owner, string repo, JsonObject payload, CancellationToken cancellationToken = default)
+        => SendAsync(HttpMethod.Post, $"/repos/{Escape(owner)}/{Escape(repo)}/pulls", cancellationToken, body: payload);
+
+    /// <summary>合并 PR（PUT /repos/{owner}/{repo}/pulls/{number}/merge）。mergeMethod: merge/squash/rebase。</summary>
+    public Task<JsonNode?> MergePullAsync(
+        string owner,
+        string repo,
+        int number,
+        string? mergeMethod = null,
+        string? message = null,
+        CancellationToken cancellationToken = default)
+    {
+        var body = new JsonObject();
+        if (mergeMethod is not null) body["merge_method"] = mergeMethod;
+        if (message is not null) body["message"] = message;
+        return SendAsync(HttpMethod.Put, $"/repos/{Escape(owner)}/{Escape(repo)}/pulls/{number}/merge", cancellationToken, body: body);
+    }
+
+    // ===== M4 Issue =====
+
+    /// <summary>列出仓库 Issue（GET /repos/{owner}/{repo}/issues），支持 state/labels 筛选与分页。</summary>
+    public Task<JsonNode?> GetIssuesAsync(
+        string owner,
+        string repo,
+        string? state = null,
+        string? labels = null,
+        int? page = null,
+        int? perPage = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new Dictionary<string, object?>();
+        if (state is not null) query["state"] = state;
+        if (labels is not null) query["labels"] = labels;
+        if (page is not null) query["page"] = page;
+        if (perPage is not null) query["per_page"] = _config.NormalizePerPage(perPage.Value);
+        return SendAsync(HttpMethod.Get, $"/repos/{Escape(owner)}/{Escape(repo)}/issues", cancellationToken, query);
+    }
+
+    /// <summary>创建 Issue（POST /repos/{owner}/{repo}/issues）。payload 含 title/body/labels/assignees。</summary>
+    public Task<JsonNode?> CreateIssueAsync(string owner, string repo, JsonObject payload, CancellationToken cancellationToken = default)
+        => SendAsync(HttpMethod.Post, $"/repos/{Escape(owner)}/{Escape(repo)}/issues", cancellationToken, body: payload);
+
+    /// <summary>关闭 Issue（PATCH /repos/{owner}/{repo}/issues/{number}，body: {"state":"closed"}）。</summary>
+    public Task<JsonNode?> CloseIssueAsync(string owner, string repo, int number, CancellationToken cancellationToken = default)
+    {
+        var body = new JsonObject { ["state"] = "closed" };
+        return SendAsync(HttpMethod.Patch, $"/repos/{Escape(owner)}/{Escape(repo)}/issues/{number}", cancellationToken, body: body);
+    }
+
+    // ===== M4 Release =====
+
+    /// <summary>列出仓库 Release（GET /repos/{owner}/{repo}/releases），支持分页。</summary>
+    public Task<JsonNode?> GetReleasesAsync(
+        string owner,
+        string repo,
+        int? page = null,
+        int? perPage = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new Dictionary<string, object?>();
+        if (page is not null) query["page"] = page;
+        if (perPage is not null) query["per_page"] = _config.NormalizePerPage(perPage.Value);
+        return SendAsync(HttpMethod.Get, $"/repos/{Escape(owner)}/{Escape(repo)}/releases", cancellationToken, query);
+    }
+
+    /// <summary>创建 Release（POST /repos/{owner}/{repo}/releases）。payload 含 tag_name/name/body/target_commitish/prerelease。</summary>
+    public Task<JsonNode?> CreateReleaseAsync(string owner, string repo, JsonObject payload, CancellationToken cancellationToken = default)
+        => SendAsync(HttpMethod.Post, $"/repos/{Escape(owner)}/{Escape(repo)}/releases", cancellationToken, body: payload);
+
     private static string Escape(string value) => Uri.EscapeDataString(value);
 
     /// <summary>发送请求：注入 access_token、分页钳制、错误映射、JSON 透传。</summary>

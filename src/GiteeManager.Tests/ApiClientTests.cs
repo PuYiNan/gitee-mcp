@@ -229,4 +229,159 @@ public class ApiClientTests
         Assert.Contains("sort=name", q);
         Assert.Contains("per_page=20", q);
     }
+
+    // ===== M4 PR =====
+
+    [Fact]
+    public async Task GetPulls_SendsUrlWithFilterParams()
+    {
+        var handler = new FakeHttpMessageHandler(_ => FakeHttpMessageHandler.JsonResponse(200, "[]"));
+        var client = new GiteeApiClient(CreateConfig(), FakeHttpMessageHandler.CreateClient(handler, TestApiBase));
+
+        await client.GetPullsAsync("PuYiNan", "demo", state: "open", head: "dev", @base: "master", page: 1, perPage: 50);
+
+        var request = Assert.Single(handler.Requests);
+        Assert.EndsWith("/repos/PuYiNan/demo/pulls", request.RequestUri!.AbsolutePath);
+        var q = request.RequestUri.Query;
+        Assert.Contains("access_token=tok-123", q);
+        Assert.Contains("state=open", q);
+        Assert.Contains("head=dev", q);
+        Assert.Contains("base=master", q);
+        Assert.Contains("page=1", q);
+        Assert.Contains("per_page=50", q);
+    }
+
+    [Fact]
+    public async Task GetPull_BuildsNumberPath()
+    {
+        var handler = new FakeHttpMessageHandler(_ => FakeHttpMessageHandler.JsonResponse(200, """{"number":12}"""));
+        var client = new GiteeApiClient(CreateConfig(), FakeHttpMessageHandler.CreateClient(handler, TestApiBase));
+
+        var result = await client.GetPullAsync("PuYiNan", "demo", 12);
+
+        Assert.EndsWith("/repos/PuYiNan/demo/pulls/12", handler.Requests[0].RequestUri!.AbsolutePath);
+        Assert.Equal(12, result!["number"]!.GetValue<int>());
+    }
+
+    [Fact]
+    public async Task CreatePull_SendsPostJsonBody()
+    {
+        var handler = new FakeHttpMessageHandler(_ => FakeHttpMessageHandler.JsonResponse(201, """{"number":13}"""));
+        var client = new GiteeApiClient(CreateConfig(), FakeHttpMessageHandler.CreateClient(handler, TestApiBase));
+
+        var payload = new JsonObject { ["title"] = "feat", ["head"] = "dev", ["base"] = "master" };
+        var result = await client.CreatePullAsync("PuYiNan", "demo", payload);
+
+        var request = Assert.Single(handler.Requests);
+        Assert.Equal(HttpMethod.Post, request.Method);
+        Assert.EndsWith("/repos/PuYiNan/demo/pulls", request.RequestUri!.AbsolutePath);
+        var body = JsonNode.Parse(Assert.Single(handler.RequestBodies))!;
+        Assert.Equal("feat", body["title"]!.GetValue<string>());
+        Assert.Equal("dev", body["head"]!.GetValue<string>());
+        Assert.Equal("master", body["base"]!.GetValue<string>());
+        Assert.Equal(13, result!["number"]!.GetValue<int>());
+    }
+
+    [Fact]
+    public async Task MergePull_SendsPutWithMergeMethodBody()
+    {
+        var handler = new FakeHttpMessageHandler(_ => FakeHttpMessageHandler.JsonResponse(200, """{"merged":true}"""));
+        var client = new GiteeApiClient(CreateConfig(), FakeHttpMessageHandler.CreateClient(handler, TestApiBase));
+
+        var result = await client.MergePullAsync("PuYiNan", "demo", 12, mergeMethod: "squash", message: "合并");
+
+        var request = Assert.Single(handler.Requests);
+        Assert.Equal(HttpMethod.Put, request.Method);
+        Assert.EndsWith("/repos/PuYiNan/demo/pulls/12/merge", request.RequestUri!.AbsolutePath);
+        var body = JsonNode.Parse(Assert.Single(handler.RequestBodies))!;
+        Assert.Equal("squash", body["merge_method"]!.GetValue<string>());
+        Assert.Equal("合并", body["message"]!.GetValue<string>());
+        Assert.True(result!["merged"]!.GetValue<bool>());
+    }
+
+    // ===== M4 Issue =====
+
+    [Fact]
+    public async Task GetIssues_SendsUrlWithFilterParams()
+    {
+        var handler = new FakeHttpMessageHandler(_ => FakeHttpMessageHandler.JsonResponse(200, "[]"));
+        var client = new GiteeApiClient(CreateConfig(), FakeHttpMessageHandler.CreateClient(handler, TestApiBase));
+
+        await client.GetIssuesAsync("PuYiNan", "demo", state: "open", labels: "bug", page: 1, perPage: 20);
+
+        var request = Assert.Single(handler.Requests);
+        Assert.EndsWith("/repos/PuYiNan/demo/issues", request.RequestUri!.AbsolutePath);
+        var q = request.RequestUri.Query;
+        Assert.Contains("state=open", q);
+        Assert.Contains("labels=bug", q);
+        Assert.Contains("page=1", q);
+        Assert.Contains("per_page=20", q);
+    }
+
+    [Fact]
+    public async Task CreateIssue_SendsPostJsonBody()
+    {
+        var handler = new FakeHttpMessageHandler(_ => FakeHttpMessageHandler.JsonResponse(201, """{"number":5}"""));
+        var client = new GiteeApiClient(CreateConfig(), FakeHttpMessageHandler.CreateClient(handler, TestApiBase));
+
+        var payload = new JsonObject { ["title"] = "bug report", ["labels"] = "bug" };
+        var result = await client.CreateIssueAsync("PuYiNan", "demo", payload);
+
+        var request = Assert.Single(handler.Requests);
+        Assert.Equal(HttpMethod.Post, request.Method);
+        Assert.EndsWith("/repos/PuYiNan/demo/issues", request.RequestUri!.AbsolutePath);
+        var body = JsonNode.Parse(Assert.Single(handler.RequestBodies))!;
+        Assert.Equal("bug report", body["title"]!.GetValue<string>());
+        Assert.Equal("bug", body["labels"]!.GetValue<string>());
+        Assert.Equal(5, result!["number"]!.GetValue<int>());
+    }
+
+    [Fact]
+    public async Task CloseIssue_SendsPatchWithClosedState()
+    {
+        var handler = new FakeHttpMessageHandler(_ => FakeHttpMessageHandler.JsonResponse(200, """{"state":"closed"}"""));
+        var client = new GiteeApiClient(CreateConfig(), FakeHttpMessageHandler.CreateClient(handler, TestApiBase));
+
+        var result = await client.CloseIssueAsync("PuYiNan", "demo", 5);
+
+        var request = Assert.Single(handler.Requests);
+        Assert.Equal(HttpMethod.Patch, request.Method);
+        Assert.EndsWith("/repos/PuYiNan/demo/issues/5", request.RequestUri!.AbsolutePath);
+        var body = JsonNode.Parse(Assert.Single(handler.RequestBodies))!;
+        Assert.Equal("closed", body["state"]!.GetValue<string>());
+        Assert.Equal("closed", result!["state"]!.GetValue<string>());
+    }
+
+    // ===== M4 Release =====
+
+    [Fact]
+    public async Task GetReleases_SendsUrlWithPaging()
+    {
+        var handler = new FakeHttpMessageHandler(_ => FakeHttpMessageHandler.JsonResponse(200, "[]"));
+        var client = new GiteeApiClient(CreateConfig(), FakeHttpMessageHandler.CreateClient(handler, TestApiBase));
+
+        await client.GetReleasesAsync("PuYiNan", "demo", page: 1, perPage: 20);
+
+        var request = Assert.Single(handler.Requests);
+        Assert.EndsWith("/repos/PuYiNan/demo/releases", request.RequestUri!.AbsolutePath);
+        Assert.Contains("page=1", request.RequestUri.Query);
+        Assert.Contains("per_page=20", request.RequestUri.Query);
+    }
+
+    [Fact]
+    public async Task CreateRelease_SendsPostJsonBody()
+    {
+        var handler = new FakeHttpMessageHandler(_ => FakeHttpMessageHandler.JsonResponse(201, """{"tag_name":"v1.0.0"}"""));
+        var client = new GiteeApiClient(CreateConfig(), FakeHttpMessageHandler.CreateClient(handler, TestApiBase));
+
+        var payload = new JsonObject { ["tag_name"] = "v1.0.0", ["prerelease"] = false };
+        var result = await client.CreateReleaseAsync("PuYiNan", "demo", payload);
+
+        var request = Assert.Single(handler.Requests);
+        Assert.Equal(HttpMethod.Post, request.Method);
+        Assert.EndsWith("/repos/PuYiNan/demo/releases", request.RequestUri!.AbsolutePath);
+        var body = JsonNode.Parse(Assert.Single(handler.RequestBodies))!;
+        Assert.Equal("v1.0.0", body["tag_name"]!.GetValue<string>());
+        Assert.Equal("v1.0.0", result!["tag_name"]!.GetValue<string>());
+    }
 }
