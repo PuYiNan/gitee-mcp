@@ -42,7 +42,7 @@ public class McpSmokeTests
     }
 
     [Fact]
-    public async Task StdioServer_ExposesAllEightTools()
+    public async Task StdioServer_ExposesAllSeventeenTools()
     {
         await using var client = await McpClient.CreateAsync(new StdioClientTransport(CreateTransportOptions("gitee-mcp-smoke-2")));
 
@@ -50,9 +50,36 @@ public class McpSmokeTests
 
         var names = tools.Select(t => t.Name).OrderBy(n => n).ToArray();
         Assert.Equal(
-            ["auth_whoami", "branch_list", "repo_create", "repo_delete", "repo_get", "repo_list", "repo_search", "tag_list"],
+            [
+                "auth_whoami", "branch_list", "issue_close", "issue_create", "issue_list",
+                "pr_create", "pr_get", "pr_list", "pr_merge", "release_create", "release_list",
+                "repo_create", "repo_delete", "repo_get", "repo_list", "repo_search", "tag_list"
+            ],
             names);
         Assert.All(tools, t => Assert.False(string.IsNullOrWhiteSpace(t.Description), $"{t.Name} 必须有非空描述"));
+    }
+
+    [Fact]
+    public async Task StdioServer_M4ToolsHaveRequiredParams()
+    {
+        await using var client = await McpClient.CreateAsync(new StdioClientTransport(CreateTransportOptions("gitee-mcp-smoke-5")));
+
+        var tools = await client.ListToolsAsync();
+        var byName = tools.ToDictionary(t => t.Name);
+
+        // pr_create 必填 title/head/base
+        var prCreate = byName["pr_create"].ProtocolTool.InputSchema.GetProperty("properties");
+        Assert.True(prCreate.TryGetProperty("title", out _));
+        Assert.True(prCreate.TryGetProperty("head", out _));
+        Assert.True(prCreate.TryGetProperty("base", out _));
+
+        // release_create 必填 tag_name
+        var releaseCreate = byName["release_create"].ProtocolTool.InputSchema.GetProperty("properties");
+        Assert.True(releaseCreate.TryGetProperty("tag_name", out _));
+
+        // issue_close 含 number
+        var issueClose = byName["issue_close"].ProtocolTool.InputSchema.GetProperty("properties");
+        Assert.True(issueClose.TryGetProperty("number", out _));
     }
 
     [Fact]
