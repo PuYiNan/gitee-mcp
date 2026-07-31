@@ -1,5 +1,5 @@
 using System.Text.Json;
-using System.Text.Json.Serialization;
+using System.Text.Json.Nodes;
 
 namespace GiteeManager.Core;
 
@@ -36,22 +36,24 @@ public sealed class GiteeConfig
             try
             {
                 var json = File.ReadAllText(path);
-                var fileConfig = JsonSerializer.Deserialize<ConfigFile>(json, JsonOptions);
-                if (fileConfig is not null)
+                if (JsonNode.Parse(json) is JsonObject obj)
                 {
-                    config.Username = fileConfig.Username ?? "";
-                    config.Token = fileConfig.Token ?? "";
-                    if (!string.IsNullOrWhiteSpace(fileConfig.ApiBase))
+                    // JsonNode 手动解析：AOT 安全（避免反射反序列化在 AOT 下被禁用）
+                    config.Username = obj["username"]?.GetValue<string>() ?? "";
+                    config.Token = obj["token"]?.GetValue<string>() ?? "";
+                    if (obj["api_base"]?.GetValue<string>() is { Length: > 0 } apiBase)
                     {
-                        config.ApiBase = fileConfig.ApiBase!;
+                        config.ApiBase = apiBase;
                     }
-                    if (fileConfig.DefaultPerPage is > 0)
+                    var defaultPerPage = obj["default_per_page"]?.GetValue<int>();
+                    if (defaultPerPage is > 0)
                     {
-                        config.DefaultPerPage = fileConfig.DefaultPerPage.Value;
+                        config.DefaultPerPage = defaultPerPage.Value;
                     }
-                    if (fileConfig.MaxPerPage is > 0)
+                    var maxPerPage = obj["max_per_page"]?.GetValue<int>();
+                    if (maxPerPage is > 0)
                     {
-                        config.MaxPerPage = fileConfig.MaxPerPage.Value;
+                        config.MaxPerPage = maxPerPage.Value;
                     }
                 }
             }
@@ -107,28 +109,4 @@ public sealed class GiteeConfig
     /// <summary>归一化分页：0/负值 → 默认值；超过 MaxPerPage → 钳制到 MaxPerPage。</summary>
     public int NormalizePerPage(int perPage) =>
         perPage <= 0 ? DefaultPerPage : Math.Min(perPage, MaxPerPage);
-
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true
-    };
-
-    /// <summary>config.json 文件结构（snake_case 键名）。</summary>
-    private sealed class ConfigFile
-    {
-        [JsonPropertyName("username")]
-        public string? Username { get; set; }
-
-        [JsonPropertyName("token")]
-        public string? Token { get; set; }
-
-        [JsonPropertyName("api_base")]
-        public string? ApiBase { get; set; }
-
-        [JsonPropertyName("default_per_page")]
-        public int? DefaultPerPage { get; set; }
-
-        [JsonPropertyName("max_per_page")]
-        public int? MaxPerPage { get; set; }
-    }
 }
