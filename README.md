@@ -8,6 +8,26 @@
 
 ## 快速开始
 
+### 0. 一键安装（从云端，推荐）
+
+目标机（Windows）执行一条命令，自动从云端下载发布产物并安装，可交互选择接入的 AI 客户端：
+
+```powershell
+# Gitee 源（国内快）
+powershell -NoProfile -ExecutionPolicy Bypass -c "irm https://gitee.com/park-yinan/gitee-mcp/raw/master/install.ps1 | iex"
+
+# 或 GitHub 源
+powershell -NoProfile -ExecutionPolicy Bypass -c "irm https://raw.githubusercontent.com/PuYiNan/gitee-mcp/master/install.ps1 | iex"
+```
+
+参数化（脚本化/CI）：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 -Dir D:/tools/gitee-mcp -Username park-yinan -Token <token> -Agents pi,claude-code
+```
+
+安装器自动：下载 Release zip → 解压安装（默认 `%LOCALAPPDATA%\gitee-mcp`）→ 引导/读取令牌写 config.json → 接入所选 AI 客户端（PI / Claude Code / Claude Desktop / Cursor）→ stdio 冒烟验证。
+
 ### 1. 获取私人令牌
 
 Gitee → 设置 → 安全设置 → **私人令牌** → 生成新令牌（勾选 `projects` 权限即可）。
