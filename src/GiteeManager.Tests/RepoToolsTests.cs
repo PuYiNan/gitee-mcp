@@ -21,7 +21,9 @@ public class RepoToolsTests
         new(CreateConfig(), FakeHttpMessageHandler.CreateClient(handler, TestApiBase));
 
     private static JsonObject ExtractError(Exception ex) =>
-        JsonNode.Parse(ex.Message)!["error"]!.AsObject();    [Fact]
+        JsonNode.Parse(ex.Message)!["error"]!.AsObject();
+
+    [Fact]
     public async Task RepoDelete_WithoutConfirm_DoesNotSendRequest()
     {
         var handler = new FakeHttpMessageHandler(_ => throw new InvalidOperationException("confirm=false 时不应发送请求"));
