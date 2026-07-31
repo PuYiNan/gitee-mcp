@@ -1,1 +1,1 @@
-20260801-gitee-mcp-m1-skeleton
+20260801-gitee-mcp-m2-repository-domain

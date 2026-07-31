@@ -23,6 +23,53 @@ public sealed class GiteeApiClient
     public Task<JsonNode?> GetCurrentUserAsync(CancellationToken cancellationToken = default)
         => SendAsync(HttpMethod.Get, "/user", cancellationToken);
 
+    /// <summary>列出当前账户仓库（GET /user/repos），支持筛选、排序、分页与关键词过滤。</summary>
+    public Task<JsonNode?> GetUserReposAsync(
+        string? type = null,
+        string? sort = null,
+        string? direction = null,
+        int? page = null,
+        int? perPage = null,
+        string? keyword = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new Dictionary<string, object?>();
+        if (type is not null) query["type"] = type;
+        if (sort is not null) query["sort"] = sort;
+        if (direction is not null) query["direction"] = direction;
+        if (page is not null) query["page"] = page;
+        if (perPage is not null) query["per_page"] = _config.NormalizePerPage(perPage.Value);
+        if (keyword is not null) query["q"] = keyword;
+        return SendAsync(HttpMethod.Get, "/user/repos", cancellationToken, query);
+    }
+
+    /// <summary>获取仓库详情（GET /repos/{owner}/{repo}）。</summary>
+    public Task<JsonNode?> GetRepoAsync(string owner, string repo, CancellationToken cancellationToken = default)
+        => SendAsync(HttpMethod.Get, $"/repos/{Escape(owner)}/{Escape(repo)}", cancellationToken);
+
+    /// <summary>全局搜索仓库（GET /search/repositories）。</summary>
+    public Task<JsonNode?> SearchReposAsync(
+        string query,
+        int? page = null,
+        int? perPage = null,
+        CancellationToken cancellationToken = default)
+    {
+        var q = new Dictionary<string, object?> { ["q"] = query };
+        if (page is not null) q["page"] = page;
+        if (perPage is not null) q["per_page"] = _config.NormalizePerPage(perPage.Value);
+        return SendAsync(HttpMethod.Get, "/search/repositories", cancellationToken, q);
+    }
+
+    /// <summary>创建仓库（POST /user/repos）。payload 为 Gitee 创建仓库参数字段（JsonObject）。</summary>
+    public Task<JsonNode?> CreateRepoAsync(JsonObject payload, CancellationToken cancellationToken = default)
+        => SendAsync(HttpMethod.Post, "/user/repos", cancellationToken, body: payload);
+
+    /// <summary>删除仓库（DELETE /repos/{owner}/{repo}）。调用方必须已完成 confirm 校验。</summary>
+    public Task<JsonNode?> DeleteRepoAsync(string owner, string repo, CancellationToken cancellationToken = default)
+        => SendAsync(HttpMethod.Delete, $"/repos/{Escape(owner)}/{Escape(repo)}", cancellationToken);
+
+    private static string Escape(string value) => Uri.EscapeDataString(value);
+
     /// <summary>发送请求：注入 access_token、分页钳制、错误映射、JSON 透传。</summary>
     public async Task<JsonNode?> SendAsync(
         HttpMethod method,

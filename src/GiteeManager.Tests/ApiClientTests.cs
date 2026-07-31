@@ -94,4 +94,99 @@ public class ApiClientTests
         Assert.Equal("重新生成令牌", node["error"]!["suggestion"]!.GetValue<string>());
         Assert.Equal("detail", node["error"]!["gitee_detail"]!.GetValue<string>());
     }
+
+    // ===== M2 仓库域：ApiClient 方法 =====
+
+    [Fact]
+    public async Task GetUserRepos_InjectsFilterSortPagingParams()
+    {
+        var handler = new FakeHttpMessageHandler(_ =>
+            FakeHttpMessageHandler.JsonResponse(200, "[]"));
+        var client = new GiteeApiClient(CreateConfig(), FakeHttpMessageHandler.CreateClient(handler, TestApiBase));
+
+        await client.GetUserReposAsync(type: "owner", sort: "created", direction: "desc", page: 1, perPage: 50, keyword: "demo");
+
+        var request = Assert.Single(handler.Requests);
+        Assert.Equal(HttpMethod.Get, request.Method);
+        Assert.EndsWith("/user/repos", request.RequestUri!.AbsolutePath);
+        var q = request.RequestUri.Query;
+        Assert.Contains("access_token=tok-123", q);
+        Assert.Contains("type=owner", q);
+        Assert.Contains("sort=created", q);
+        Assert.Contains("direction=desc", q);
+        Assert.Contains("page=1", q);
+        Assert.Contains("per_page=50", q);
+        Assert.Contains("q=demo", q);
+    }
+
+    [Fact]
+    public async Task GetRepo_BuildsOwnerRepoPath()
+    {
+        var handler = new FakeHttpMessageHandler(_ =>
+            FakeHttpMessageHandler.JsonResponse(200, """{"full_name":"PuYiNan/demo"}"""));
+        var client = new GiteeApiClient(CreateConfig(), FakeHttpMessageHandler.CreateClient(handler, TestApiBase));
+
+        var result = await client.GetRepoAsync("PuYiNan", "demo");
+
+        Assert.EndsWith("/repos/PuYiNan/demo", handler.Requests[0].RequestUri!.AbsolutePath);
+        Assert.Equal("PuYiNan/demo", result!["full_name"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task SearchRepos_SendsQueryAndTransparentTotalCount()
+    {
+        const string body = """{"total_count":42,"items":[{"full_name":"a/b"}]}""";
+        var handler = new FakeHttpMessageHandler(_ =>
+            FakeHttpMessageHandler.JsonResponse(200, body));
+        var client = new GiteeApiClient(CreateConfig(), FakeHttpMessageHandler.CreateClient(handler, TestApiBase));
+
+        var result = await client.SearchReposAsync("gitee", page: 1, perPage: 20);
+
+        var request = Assert.Single(handler.Requests);
+        Assert.EndsWith("/search/repositories", request.RequestUri!.AbsolutePath);
+        Assert.Contains("q=gitee", request.RequestUri.Query);
+        Assert.Contains("per_page=20", request.RequestUri.Query);
+        Assert.Equal(42, result!["total_count"]!.GetValue<int>());
+        Assert.Single(result["items"]!.AsArray());
+    }
+
+    [Fact]
+    public async Task CreateRepo_SendsPostJsonBody()
+    {
+        var handler = new FakeHttpMessageHandler(_ =>
+            FakeHttpMessageHandler.JsonResponse(201, """{"name":"demo"}"""));
+        var client = new GiteeApiClient(CreateConfig(), FakeHttpMessageHandler.CreateClient(handler, TestApiBase));
+
+        var payload = new JsonObject
+        {
+            ["name"] = "demo",
+            ["description"] = "测试仓库",
+            ["private"] = true
+        };
+        var result = await client.CreateRepoAsync(payload);
+
+        var request = Assert.Single(handler.Requests);
+        Assert.Equal(HttpMethod.Post, request.Method);
+        Assert.EndsWith("/user/repos", request.RequestUri!.AbsolutePath);
+        var body = JsonNode.Parse(Assert.Single(handler.RequestBodies))!;
+        Assert.Equal("demo", body["name"]!.GetValue<string>());
+        Assert.Equal("测试仓库", body["description"]!.GetValue<string>());
+        Assert.Equal(true, body["private"]!.GetValue<bool>());
+        Assert.Equal("demo", result!["name"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task DeleteRepo_SendsDeleteRequest()
+    {
+        var handler = new FakeHttpMessageHandler(_ =>
+            FakeHttpMessageHandler.JsonResponse(204, ""));
+        var client = new GiteeApiClient(CreateConfig(), FakeHttpMessageHandler.CreateClient(handler, TestApiBase));
+
+        var result = await client.DeleteRepoAsync("PuYiNan", "demo");
+
+        var request = Assert.Single(handler.Requests);
+        Assert.Equal(HttpMethod.Delete, request.Method);
+        Assert.EndsWith("/repos/PuYiNan/demo", request.RequestUri!.AbsolutePath);
+        Assert.Null(result); // 204 无响应体
+    }
 }

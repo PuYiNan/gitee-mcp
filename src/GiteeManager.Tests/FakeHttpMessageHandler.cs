@@ -7,6 +7,9 @@ public sealed class FakeHttpMessageHandler : HttpMessageHandler
 
     public List<HttpRequestMessage> Requests { get; } = [];
 
+    /// <summary>请求体快照（发送时读取，避免请求被 dispose 后无法读取）。与 Requests 同序。</summary>
+    public List<string?> RequestBodies { get; } = [];
+
     public FakeHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> responder)
     {
         _responder = responder;
@@ -28,9 +31,15 @@ public sealed class FakeHttpMessageHandler : HttpMessageHandler
         return response;
     }
 
-    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
+        string? body = null;
+        if (request.Content is not null)
+        {
+            body = await request.Content.ReadAsStringAsync(cancellationToken);
+        }
         Requests.Add(request);
-        return Task.FromResult(_responder(request));
+        RequestBodies.Add(body);
+        return _responder(request);
     }
 }
