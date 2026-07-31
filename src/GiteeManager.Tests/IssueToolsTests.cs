@@ -43,7 +43,7 @@ public class IssueToolsTests
         var result = await IssueTools.IssueCreate(CreateConfig(), client, "demo", title: "bug report", labels: "bug");
 
         Assert.Equal(HttpMethod.Post, handler.Requests[0].Method);
-        var body = JsonNode.Parse(Assert.Single(handler.RequestBodies))!;
+        var body = JsonNode.Parse(handler.RequireSingleBody());
         Assert.Equal("bug report", body["title"]!.GetValue<string>());
         Assert.Equal("bug", body["labels"]!.GetValue<string>());
         Assert.Equal(5, JsonNode.Parse(result)!["number"]!.GetValue<int>());
@@ -59,7 +59,7 @@ public class IssueToolsTests
 
         Assert.Equal(HttpMethod.Patch, handler.Requests[0].Method);
         Assert.EndsWith("/repos/PuYiNan/demo/issues/5", handler.Requests[0].RequestUri!.AbsolutePath);
-        Assert.Equal("closed", JsonNode.Parse(Assert.Single(handler.RequestBodies))!["state"]!.GetValue<string>());
+        Assert.Equal("closed", JsonNode.Parse(handler.RequireSingleBody())["state"]!.GetValue<string>());
     }
 
     [Fact]

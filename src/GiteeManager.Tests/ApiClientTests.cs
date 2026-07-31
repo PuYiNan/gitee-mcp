@@ -275,7 +275,7 @@ public class ApiClientTests
         var request = Assert.Single(handler.Requests);
         Assert.Equal(HttpMethod.Post, request.Method);
         Assert.EndsWith("/repos/PuYiNan/demo/pulls", request.RequestUri!.AbsolutePath);
-        var body = JsonNode.Parse(Assert.Single(handler.RequestBodies))!;
+        var body = JsonNode.Parse(handler.RequireSingleBody());
         Assert.Equal("feat", body["title"]!.GetValue<string>());
         Assert.Equal("dev", body["head"]!.GetValue<string>());
         Assert.Equal("master", body["base"]!.GetValue<string>());
@@ -293,7 +293,7 @@ public class ApiClientTests
         var request = Assert.Single(handler.Requests);
         Assert.Equal(HttpMethod.Put, request.Method);
         Assert.EndsWith("/repos/PuYiNan/demo/pulls/12/merge", request.RequestUri!.AbsolutePath);
-        var body = JsonNode.Parse(Assert.Single(handler.RequestBodies))!;
+        var body = JsonNode.Parse(handler.RequireSingleBody());
         Assert.Equal("squash", body["merge_method"]!.GetValue<string>());
         Assert.Equal("合并", body["message"]!.GetValue<string>());
         Assert.True(result!["merged"]!.GetValue<bool>());
@@ -330,7 +330,7 @@ public class ApiClientTests
         var request = Assert.Single(handler.Requests);
         Assert.Equal(HttpMethod.Post, request.Method);
         Assert.EndsWith("/repos/PuYiNan/demo/issues", request.RequestUri!.AbsolutePath);
-        var body = JsonNode.Parse(Assert.Single(handler.RequestBodies))!;
+        var body = JsonNode.Parse(handler.RequireSingleBody());
         Assert.Equal("bug report", body["title"]!.GetValue<string>());
         Assert.Equal("bug", body["labels"]!.GetValue<string>());
         Assert.Equal(5, result!["number"]!.GetValue<int>());
@@ -347,7 +347,7 @@ public class ApiClientTests
         var request = Assert.Single(handler.Requests);
         Assert.Equal(HttpMethod.Patch, request.Method);
         Assert.EndsWith("/repos/PuYiNan/demo/issues/5", request.RequestUri!.AbsolutePath);
-        var body = JsonNode.Parse(Assert.Single(handler.RequestBodies))!;
+        var body = JsonNode.Parse(handler.RequireSingleBody());
         Assert.Equal("closed", body["state"]!.GetValue<string>());
         Assert.Equal("closed", result!["state"]!.GetValue<string>());
     }
@@ -380,7 +380,7 @@ public class ApiClientTests
         var request = Assert.Single(handler.Requests);
         Assert.Equal(HttpMethod.Post, request.Method);
         Assert.EndsWith("/repos/PuYiNan/demo/releases", request.RequestUri!.AbsolutePath);
-        var body = JsonNode.Parse(Assert.Single(handler.RequestBodies))!;
+        var body = JsonNode.Parse(handler.RequireSingleBody());
         Assert.Equal("v1.0.0", body["tag_name"]!.GetValue<string>());
         Assert.Equal("v1.0.0", result!["tag_name"]!.GetValue<string>());
     }

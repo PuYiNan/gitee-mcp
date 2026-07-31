@@ -10,6 +10,13 @@ public sealed class FakeHttpMessageHandler : HttpMessageHandler
     /// <summary>请求体快照（发送时读取，避免请求被 dispose 后无法读取）。与 Requests 同序。</summary>
     public List<string?> RequestBodies { get; } = [];
 
+    /// <summary>取唯一请求体并断言非空（消除 nullable 警告）。</summary>
+    public string RequireSingleBody()
+    {
+        var body = Assert.Single(RequestBodies);
+        return body ?? throw new InvalidOperationException("预期存在请求体，实际为空");
+    }
+
     public FakeHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> responder)
     {
         _responder = responder;
