@@ -42,7 +42,7 @@ public class McpSmokeTests
     }
 
     [Fact]
-    public async Task StdioServer_ExposesAllSixTools()
+    public async Task StdioServer_ExposesAllEightTools()
     {
         await using var client = await McpClient.CreateAsync(new StdioClientTransport(CreateTransportOptions("gitee-mcp-smoke-2")));
 
@@ -50,9 +50,27 @@ public class McpSmokeTests
 
         var names = tools.Select(t => t.Name).OrderBy(n => n).ToArray();
         Assert.Equal(
-            ["auth_whoami", "repo_create", "repo_delete", "repo_get", "repo_list", "repo_search"],
+            ["auth_whoami", "branch_list", "repo_create", "repo_delete", "repo_get", "repo_list", "repo_search", "tag_list"],
             names);
         Assert.All(tools, t => Assert.False(string.IsNullOrWhiteSpace(t.Description), $"{t.Name} 必须有非空描述"));
+    }
+
+    [Fact]
+    public async Task StdioServer_BranchTagSchemasExposeParams()
+    {
+        await using var client = await McpClient.CreateAsync(new StdioClientTransport(CreateTransportOptions("gitee-mcp-smoke-4")));
+
+        var tools = await client.ListToolsAsync();
+        foreach (var name in new[] { "branch_list", "tag_list" })
+        {
+            var tool = Assert.Single(tools, t => t.Name == name);
+            var properties = tool.ProtocolTool.InputSchema.GetProperty("properties");
+            Assert.True(properties.TryGetProperty("owner", out _), $"{name} schema 缺 owner");
+            Assert.True(properties.TryGetProperty("repo", out _), $"{name} schema 缺 repo");
+            Assert.True(properties.TryGetProperty("sort", out _), $"{name} schema 缺 sort");
+            Assert.True(properties.TryGetProperty("page", out _), $"{name} schema 缺 page");
+            Assert.True(properties.TryGetProperty("per_page", out _), $"{name} schema 缺 per_page");
+        }
     }
 
     [Fact]
