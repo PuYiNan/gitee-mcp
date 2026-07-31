@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
 gitee-mcp 一键安装器：从云端（GitHub/Gitee Release）下载发布产物并安装，
 可选接入多个 AI 客户端（PI / Claude Code / Claude Desktop / Cursor）。
