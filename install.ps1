@@ -24,7 +24,8 @@ param(
     [string] $Token = "",
     [string[]] $Agents = @(),
     [ValidateSet("auto", "github", "gitee")] [string] $Source = "auto",
-    [string] $Version = "v1.0.0"
+    [string] $Version = "v1.0.0",
+    [switch] $SkipAgents
 )
 
 $ErrorActionPreference = "Stop"
@@ -108,7 +109,8 @@ else {
 }
 
 # ========== 5. 选择要接入的 AI 客户端 ==========
-if ($Agents.Count -eq 0 -and $Interactive) {
+if ($SkipAgents) { $Agents = @() }
+elseif ($Agents.Count -eq 0 -and $Interactive) {
     Write-Host ""
     Write-Host "==> 选择要接入的 AI 客户端（逗号分隔多选，如 1,2；输入 0 接入全部；留空跳过）："
     Write-Host "  1) pi             （Pi / pi-mcp-adapter 全局配置）"
