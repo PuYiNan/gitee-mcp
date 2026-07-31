@@ -5,3 +5,6 @@ obj/
 TestResults/
 release/
 .mcp.json
+config.json
+.ai-quality/work-items/
+gitee-mcp.zip
