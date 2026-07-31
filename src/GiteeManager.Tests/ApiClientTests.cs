@@ -395,7 +395,7 @@ public class ApiClientTests
 
         await client.GetCurrentUserAsync();
 
-        Assert.Equal("https://gitee.com/api/v5/user/repos?access_token=tok-123",
+        Assert.Equal("https://gitee.com/api/v5/user?access_token=tok-123",
             Assert.Single(handler.Requests).RequestUri!.ToString());
     }
 
